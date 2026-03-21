@@ -23,6 +23,7 @@ kioku/
   │     ├── models.py   # Subject, Concept, Flashcard classes
   │     ├── sm2.py      # SM2 scheduling algorithm
   │     └── graph.py    # Knowledge graph + risk propagation
+  |     |__ db.py       # initalize db & session    
   └── app.py            # Flask app (coming soon)
 ```
 
