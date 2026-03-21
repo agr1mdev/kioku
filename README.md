@@ -30,7 +30,7 @@ kioku/
 - [x] SM-2 algorithm
 - [x] Knowledge graph with risk propagation
 - [x] Data model (Subject, Concept, Flashcard)
-- [ ] SQLite database for persistence
+- [x] SQLite database for persistence
 - [ ] Flask web interface
 - [ ] Drag and drop canvas UI
 - [ ] ML layer for personalized scheduling
