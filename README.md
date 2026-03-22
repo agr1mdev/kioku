@@ -23,6 +23,7 @@ kioku/
   │     ├── models.py   # Subject, Concept, Flashcard classes
   │     ├── sm2.py      # SM2 scheduling algorithm
   │     └── graph.py    # Knowledge graph + risk propagation
+  |     |__ db.py       # initalize db & session    
   └── app.py            # Flask app (coming soon)
 ```
 
@@ -30,7 +31,7 @@ kioku/
 - [x] SM-2 algorithm
 - [x] Knowledge graph with risk propagation
 - [x] Data model (Subject, Concept, Flashcard)
-- [ ] SQLite database for persistence
+- [x] SQLite database for persistence
 - [ ] Flask web interface
 - [ ] Drag and drop canvas UI
 - [ ] ML layer for personalized scheduling
