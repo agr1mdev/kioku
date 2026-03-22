@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review</title>
+</head>
+<body>
+    <h1>Review</h1>
+    {% if card %}
+        <h2>{{card.front}}</h2>
+
+        {% if show_answer %}
+            <p>{{ card.back }}</p>
+            <form method = "POST" action="/review/answer">
+                <input type="hidden" name="card_id" value="{{ card.id }}">
+                <button type="submit" name="score" value="1">Again</button>
+                <button type="submit" name="score" value="3">Hard</button>
+                <button type="submit" name="score" value="5">Easy</button>
+            </form>
+        {% else %}
+            <form method="POST" action="/review/show-answer">
+                <input type="hidden" name="card_id" value="{{card.id}}">
+                <button type="submit">Show Answer</button>
+            </form>
+        {% endif %}      
+    
+    {% else %}
+        <h2>No cards due today!</h2>
+    {% endif %}
+
+    <a href="/">Home</a>
+</body>
+</html>

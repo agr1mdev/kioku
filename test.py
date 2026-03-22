@@ -46,10 +46,10 @@ session = Session()
 # create a subject and save it
 
 # clear tables before testing
-session.query(Flashcard).delete()
-session.query(Concept).delete()
-session.query(Subject).delete()
-session.commit()
+# session.query(Flashcard).delete()
+# session.query(Concept).delete()
+# session.query(Subject).delete()
+# session.commit()
 
 # now add fresh data
 con1 = Concept(name="Calculus", subject_id=1)
@@ -77,3 +77,11 @@ session.commit()
 
 fc2 = session.query(Flashcard).first()
 print("After:", fc2.id, fc2.ease_factor, fc2.interval, fc2.next_review)
+
+from datetime import date
+
+session = Session()
+flashcard = session.query(Flashcard).first()
+flashcard.next_review = date.today()
+session.commit()
+print(flashcard.front, flashcard.next_review)

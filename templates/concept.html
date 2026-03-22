@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{concept.name}}</title>
+</head>
+<body>
+    <h1>{{concept.name}}</h1>
+
+    <h2>Flashcards</h2>
+    <ul>
+        {% for card in flashcards %}
+            <li>{{card.front}}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Add Flashcard</h2>
+    <form method="POST" action="/concept/{{concept.id}}/add-flashcard">
+        <input type="text" name="front" placeholder="Front (question)">
+        <input type="text" name="back" placeholder="Back (answer)">
+        <button type="submit">Add</button>
+    </form>
+
+    <a href="/subject/{{concept.subject_id}}">Back</a>
+</body>
+</html>
