@@ -36,7 +36,7 @@ kioku/
 - [x] Data model (Subject, Concept, Flashcard)
 - [x] SQLite database for persistence
 - [x] Flask web interface with full review flow
-- [ ] Drag and drop canvas UI
+- [x] Drag and drop canvas UI
 - [ ] ML layer for personalized scheduling
 - [ ] Export/import Kioku deck files
 - [ ] Anki deck importer
