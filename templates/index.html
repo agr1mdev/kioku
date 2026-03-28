@@ -8,7 +8,12 @@
 <div class="container mt-4">
 
     <h1>Kioku(記憶)</h1>
-    <a href="/review" class="btn btn-primary mb-3">Start Review</a>
+    <a href="/review" class="btn btn-primary mb-3">
+    Start Review 
+    {% if due_count > 0 %}
+        <span class="badge bg-danger">{{ due_count }}</span>
+    {% endif %}
+    </a>
 
     <h2>Subjects</h2>
     <ul class="list-group mb-3">

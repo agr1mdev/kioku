@@ -17,10 +17,8 @@ init_db()
 def home():
     session = Session()
     subjects = session.query(Subject).all()
-    print("Subjects found:", subjects)  # add this
-    for s in subjects:
-        print(s.id, s.name)            # add this
-    return render_template("index.html", subjects=subjects)
+    due_count = session.query(Flashcard).filter(Flashcard.next_review <= date.today()).count()
+    return render_template("index.html", subjects=subjects, due_count=due_count)
 
 @app.route("/add-subject",methods = ["POST"])
 def add_subject():
@@ -92,20 +90,29 @@ def answer():
     sm2 = SM2()
     sm2.review(flashcard, int(score))
 
+    concept = session.query(Concept).filter_by(id=flashcard.concept_id).first()
+    all_concepts = session.query(Concept).filter_by(subject_id=concept.subject_id).all()
+
     if int(score) < 3:
-        concept = session.query(Concept).filter_by(id=flashcard.concept_id).first()
-        all_concepts = session.query(Concept).filter_by(subject_id=concept.subject_id).all()
         graph = {}
         for c in all_concepts:
             deps = session.query(Dependency).filter_by(target_id=c.id).all()
             graph[c.name] = [session.query(Concept).filter_by(id=d.source_id).first().name for d in deps]
         at_risk = get_at_risk(graph, concept.name)
-        at_risk.append(concept.name)  # ← add failed concept itself
+        at_risk.append(concept.name)
         for c in all_concepts:
-            if c.name in at_risk:
-                c.at_risk = True
-            else:
-                c.at_risk = False
+            c.at_risk = True if c.name in at_risk else False
+    else:
+        concept.at_risk = False
+        for c in all_concepts:
+            if c.at_risk and c.id != concept.id:
+                deps = session.query(Dependency).filter_by(target_id=c.id).all()
+                still_at_risk = any(
+                    session.query(Concept).filter_by(id=d.source_id).first().at_risk
+                    for d in deps
+                )
+                if not still_at_risk:
+                    c.at_risk = False
 
     session.commit()
     return redirect("/review")
