@@ -3,11 +3,45 @@
 <head>
     <title>{{ subject.name }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+    .dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: rgba(255,255,255,0.4);
+        border-radius: 50%;
+        cursor: crosshair;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .concept-node:hover .dot { opacity: 1; }
+    .dot-left   { top: 50%; left: -4px;  transform: translateY(-50%); }
+    .dot-right  { top: 50%; right: -4px; transform: translateY(-50%); }
+    .dot-top    { left: 50%; top: -4px;  transform: translateX(-50%); }
+    .dot-bottom { left: 50%; bottom: -4px; transform: translateX(-50%); }
+    </style>
 </head>
 <body>
 <div class="container mt-4">
 
     <h1>{{ subject.name }}</h1>
+
+    <div id="canvas" style="position: relative; width: 100%; height: 500px; border: 1px solid #ccc; margin-bottom: 20px;">
+        {% for concept in concepts %}
+            <div id="concept-{{ concept.id }}"
+                class="concept-node"
+                style="position: absolute; left: {{ concept.x or loop.index * 120 }}px; top: {{ concept.y or 50 }}px; padding: 10px 16px; background: {% if concept.at_risk %}#dc3545{% else %}#0d6efd{% endif %}; color: white; border-radius: 8px; cursor: move; min-width: 120px; text-align: center;">
+                {{ concept.name }}
+                {% if concept.at_risk %}
+                    <br><small style="font-size: 10px;">⚠ at risk</small>
+                {% endif %}
+                <div class="connect-btn dot dot-left"></div>
+                <div class="connect-btn dot dot-right"></div>
+                <div class="connect-btn dot dot-top"></div>
+                <div class="connect-btn dot dot-bottom"></div>
+            </div>
+        {% endfor %}
+    </div>
 
     <h2>Concepts</h2>
     <ul class="list-group mb-3">
@@ -27,5 +61,89 @@
     <a href="/" class="btn btn-secondary mt-3">Back</a>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsplumb@2.15.6/dist/js/jsplumb.min.js"></script>
+<script>
+jsPlumb.ready(function() {
+    jsPlumb.setContainer("canvas");
+
+    let isLoading = true;
+
+    jsPlumb.importDefaults({
+        ConnectionOverlays: [
+            ["Arrow", { location: 1, width: 12, length: 12, id: "arrow" }]
+        ]
+    });
+
+    {% for concept in concepts %}
+    jsPlumb.draggable("concept-{{ concept.id }}", {
+        containment: "canvas",
+        stop: function(event) {
+            let el = event.el;
+            fetch("/save-position", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: "{{ concept.id }}",
+                    x: el.offsetLeft,
+                    y: el.offsetTop
+                })
+            });
+        }
+    });
+
+    jsPlumb.makeSource("concept-{{ concept.id }}", {
+        filter: ".connect-btn",
+        anchor: "Continuous",
+        connector: ["StateMachine"],
+        connectorStyle: { stroke: "#0d6efd", strokeWidth: 2 },
+        connectorHoverStyle: { stroke: "#0a58ca" },
+        endpoint: "Blank"
+    });
+
+    jsPlumb.makeTarget("concept-{{ concept.id }}", {
+        anchor: "Continuous",
+        allowLoopback: false,
+        endpoint: "Blank",
+        beforeDrop: function(params) {
+            if (params.sourceId === params.targetId) return false;
+            let existingConnections = jsPlumb.getConnections({
+                source: params.sourceId,
+                target: params.targetId
+            });
+            return existingConnections.length === 0;
+        }
+    });
+    {% endfor %}
+
+    jsPlumb.bind("connection", function(info) {
+        if (isLoading) return;
+
+        let sourceId = info.sourceId.replace("concept-", "");
+        let targetId = info.targetId.replace("concept-", "");
+
+        fetch("/add-dependency", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ source: sourceId, target: targetId })
+        });
+    });
+
+    {% for dep in dependencies %}
+    jsPlumb.connect({
+        source: "concept-{{ dep.source_id }}",
+        target: "concept-{{ dep.target_id }}",
+        connector: ["StateMachine"],
+        anchors: ["Continuous", "Continuous"],
+        paintStyle: { stroke: "#0d6efd", strokeWidth: 2 },
+        endpoint: "Blank"
+    });
+    {% endfor %}
+
+    isLoading = false;
+
+});
+</script>
+
 </body>
 </html>

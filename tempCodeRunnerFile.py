@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, redirect
 from core.db import Session, init_db
 from core.models import Subject, Concept, Flashcard, Dependency
-from core.graph import get_at_risk, get_concept_health
 from core.sm2 import SM2
 from datetime import date
 from flask import jsonify
@@ -31,16 +30,12 @@ def add_subject():
     session.commit()
     return redirect("/")
 
-@app.route("/subject/<int:subject_id>", methods=["GET"])
+@app.route("/subject/<int:subject_id>",methods= ["GET"])
 def subject(subject_id):
     session = Session()
     subject = session.query(Subject).filter_by(id=subject_id).first()
-    concepts = session.query(Concept).filter_by(subject_id=subject_id).all()
-    concept_ids = [c.id for c in concepts]
-    dependencies = session.query(Dependency).filter(
-        Dependency.source_id.in_(concept_ids)
-    ).all()
-    return render_template("subject.html", subject=subject, concepts=concepts, dependencies=dependencies)
+    concepts = session.query(Concept).filter_by(subject_id = subject_id).all()
+    return render_template("subject.html",subject=subject,concepts = concepts)
 
 @app.route("/subject/<int:subject_id>/add-concept", methods = ["POST"])
 def add_concept(subject_id):
@@ -83,32 +78,16 @@ def show_answer():
     flashcard = session.query(Flashcard).filter_by(id=card_id).first()
     return render_template("review.html",card = flashcard,show_answer=True)
 
-@app.route("/review/answer", methods=["POST"])
+@app.route("/review/answer",methods = ["POST"])
 def answer():
     card_id = request.form["card_id"]
-    score = request.form["score"]
+    score = request.form["score"] 
     session = Session()
     flashcard = session.query(Flashcard).filter_by(id=card_id).first()
     sm2 = SM2()
     sm2.review(flashcard, int(score))
-
-    if int(score) < 3:
-        concept = session.query(Concept).filter_by(id=flashcard.concept_id).first()
-        all_concepts = session.query(Concept).filter_by(subject_id=concept.subject_id).all()
-        graph = {}
-        for c in all_concepts:
-            deps = session.query(Dependency).filter_by(target_id=c.id).all()
-            graph[c.name] = [session.query(Concept).filter_by(id=d.source_id).first().name for d in deps]
-        at_risk = get_at_risk(graph, concept.name)
-        at_risk.append(concept.name)  # ← add failed concept itself
-        for c in all_concepts:
-            if c.name in at_risk:
-                c.at_risk = True
-            else:
-                c.at_risk = False
-
     session.commit()
-    return redirect("/review")
+    return redirect(f"/review")
 
 @app.route("/debug")
 def debug():
@@ -125,18 +104,9 @@ def add_dependency():
     source_id = data["source"]
     target_id = data["target"]
     session = Session()
-    
-    # check if dependency already exists
-    existing = session.query(Dependency).filter_by(
-        source_id=source_id, 
-        target_id=target_id
-    ).first()
-    
-    if not existing:
-        dep = Dependency(source_id=source_id, target_id=target_id)
-        session.add(dep)
-        session.commit()
-    
+    dep = Dependency(source_id=source_id, target_id=target_id)
+    session.add(dep)
+    session.commit()
     return jsonify({"status": "ok"})
 
 @app.route("/save-position", methods=["POST"])
