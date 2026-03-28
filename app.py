@@ -174,5 +174,19 @@ def delete_dependency():
     print("Dependency not found")  # add this
     return jsonify({"status": "not found"})
 
+@app.route("/concept/<int:concept_id>/delete", methods=["POST"])
+def delete_concept(concept_id):
+    session = Session()
+    session.query(Flashcard).filter_by(concept_id=concept_id).delete()
+    session.query(Dependency).filter(
+        (Dependency.source_id == concept_id) | (Dependency.target_id == concept_id)
+    ).delete()
+    concept = session.query(Concept).filter_by(id=concept_id).first()
+    subject_id = concept.subject_id
+    session.delete(concept)
+    session.commit()
+    return redirect(f"/subject/{subject_id}")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
