@@ -19,6 +19,21 @@
     .dot-right  { top: 50%; right: -4px; transform: translateY(-50%); }
     .dot-top    { left: 50%; top: -4px;  transform: translateX(-50%); }
     .dot-bottom { left: 50%; bottom: -4px; transform: translateX(-50%); }
+
+    .delete-connection {
+        cursor: pointer;
+        color: #dc3545;
+        font-size: 12px;
+        font-weight: bold;
+        background: white;
+        border-radius: 50%;
+        padding: 2px 5px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .delete-connection:hover {
+        opacity: 1;
+    }
     </style>
 </head>
 <body>
@@ -71,8 +86,15 @@ jsPlumb.ready(function() {
 
     jsPlumb.importDefaults({
         ConnectionOverlays: [
-            ["Arrow", { location: 1, width: 12, length: 12, id: "arrow" }]
-        ]
+            ["Arrow", { location: 1, width: 12, length: 12, id: "arrow" }],
+            ["Label", {
+                label: "✕",
+                id: "delete-label",
+                cssClass: "delete-connection",
+                location: 0.5
+            }]
+        ],
+        HoverPaintStyle: { stroke: "#0a58ca", strokeWidth: 4 }
     });
 
     {% for concept in concepts %}
@@ -96,7 +118,7 @@ jsPlumb.ready(function() {
         filter: ".connect-btn",
         anchor: "Continuous",
         connector: ["StateMachine"],
-        connectorStyle: { stroke: "#0d6efd", strokeWidth: 2 },
+        connectorStyle: { stroke: "#0d6efd", strokeWidth: 3 },
         connectorHoverStyle: { stroke: "#0a58ca" },
         endpoint: "Blank"
     });
@@ -118,10 +140,8 @@ jsPlumb.ready(function() {
 
     jsPlumb.bind("connection", function(info) {
         if (isLoading) return;
-
         let sourceId = info.sourceId.replace("concept-", "");
         let targetId = info.targetId.replace("concept-", "");
-
         fetch("/add-dependency", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -135,12 +155,34 @@ jsPlumb.ready(function() {
         target: "concept-{{ dep.target_id }}",
         connector: ["StateMachine"],
         anchors: ["Continuous", "Continuous"],
-        paintStyle: { stroke: "#0d6efd", strokeWidth: 2 },
+        paintStyle: { stroke: "#0d6efd", strokeWidth: 3 },
         endpoint: "Blank"
     });
     {% endfor %}
 
     isLoading = false;
+
+    document.addEventListener("click", function(e) {
+        if (e.target.classList.contains("delete-connection")) {
+            if (confirm("Remove this connection?")) {
+                let connections = jsPlumb.getAllConnections();
+                connections.forEach(function(conn) {
+                    let label = conn.getOverlay("delete-label");
+                    if (label && label.canvas === e.target) {
+                        let sourceId = conn.sourceId.replace("concept-", "");
+                        let targetId = conn.targetId.replace("concept-", "");
+                        fetch("/delete-dependency", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ source: sourceId, target: targetId })
+                        }).then(() => {
+                            jsPlumb.deleteConnection(conn);
+                        });
+                    }
+                });
+            }
+        }
+    });
 
 });
 </script>

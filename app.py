@@ -156,6 +156,23 @@ def save_position():
     session.commit()
     return jsonify({"status": "ok"})
 
+@app.route("/delete-dependency", methods=["POST"])
+def delete_dependency():
+    data = request.get_json()
+    source_id = data["source"]
+    target_id = data["target"]
+    session = Session()
+    dep = session.query(Dependency).filter_by(
+        source_id=source_id,
+        target_id=target_id
+    ).first()
+    if dep:
+        session.delete(dep)
+        session.commit()
+        print(f"Deleted dependency {source_id} -> {target_id}")  # add this
+        return jsonify({"status": "deleted"})
+    print("Dependency not found")  # add this
+    return jsonify({"status": "not found"})
 
 if __name__ == "__main__":
     app.run(debug=True)
